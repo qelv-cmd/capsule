@@ -1,0 +1,1795 @@
+```html
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LAB-DYNAMICS // ЭЛАСТИЧНОСТЬ 50X HYPER-EDITION</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        body {
+            background-color: #03050a;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .lab-bg {
+            background: radial-gradient(circle at 50% 38%, #0c1b2e 0%, #04070f 65%, #020307 100%);
+        }
+
+        /* Custom Sci-Fi Range Sliders */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            background: rgba(15, 23, 42, 0.95);
+            border-radius: 999px;
+            outline: none;
+            border: 1px solid rgba(56, 189, 248, 0.25);
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #38bdf8;
+            border: 2px solid #04070f;
+            box-shadow: 0 0 14px rgba(56, 189, 248, 0.9);
+            cursor: pointer;
+            transition: transform 0.1s ease, background-color 0.1s ease;
+        }
+        input[type="range"]::-webkit-slider-thumb:active {
+            transform: scale(1.25);
+            background: #e0f2fe;
+        }
+        input[type="range"].ring-slider::-webkit-slider-thumb {
+            background: #fb7185;
+            box-shadow: 0 0 14px rgba(251, 113, 133, 0.9);
+        }
+        input[type="range"].length-slider::-webkit-slider-thumb {
+            background: #34d399;
+            box-shadow: 0 0 14px rgba(52, 211, 153, 0.9);
+        }
+
+        /* Hyper-Glassmorphic Panels */
+        .hyper-panel {
+            background: rgba(7, 11, 20, 0.78);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(56, 189, 248, 0.22);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+
+        .chroma-flash {
+            animation: chromaPulse 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        @keyframes chromaPulse {
+            0% { filter: drop-shadow(-3px 0 0 rgba(255,0,85,0.65)) drop-shadow(3px 0 0 rgba(0,240,255,0.65)); }
+            100% { filter: drop-shadow(0 0 0 rgba(255,0,85,0)) drop-shadow(0 0 0 rgba(0,240,255,0)); }
+        }
+
+        #canvas-container {
+            touch-action: none;
+            cursor: grab;
+        }
+        #canvas-container:active {
+            cursor: grabbing;
+        }
+    </style>
+</head>
+<body class="lab-bg flex flex-col justify-between select-none">
+
+    <!-- Top Telemetry & Camera HUD -->
+    <header class="w-full px-3 pt-2.5 pb-1 sm:px-5 sm:pt-3.5 flex flex-col gap-1.5 z-20 pointer-events-none">
+        <!-- Brand + Camera Presets -->
+        <div class="flex items-center justify-between gap-1.5">
+            <div class="flex items-center gap-2 pointer-events-auto">
+                <div id="status-led" class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_#34d399] animate-pulse"></div>
+                <div>
+                    <h1 class="text-[11px] sm:text-sm font-extrabold tracking-wider text-sky-400 uppercase leading-none flex items-center gap-1.5">
+                        <span>LAB-DYNAMICS</span>
+                        <span class="px-1.5 py-0.5 rounded bg-rose-500/20 border border-rose-400/40 text-rose-300 text-[9px] font-bold">50X HYPER</span>
+                    </h1>
+                    <p class="text-[9px] text-slate-400 tracking-widest uppercase mt-0.5 hidden sm:block">
+                        PMREM HDRI • 200-УЗЛОВОЙ СОЛВЕР • ГИДРОДИНАМИКА ЯДРА
+                    </p>
+                </div>
+            </div>
+
+            <!-- Camera Mode Buttons -->
+            <div class="flex rounded-xl hyper-panel overflow-hidden p-0.5 pointer-events-auto">
+                <button data-cam="orbit" class="cam-btn px-2 py-1 rounded-lg bg-sky-500/30 text-sky-200 text-[9px] font-bold uppercase transition">3D ОРБИТА</button>
+                <button data-cam="follow" class="cam-btn px-2 py-1 rounded-lg text-slate-400 hover:text-slate-200 text-[9px] font-bold uppercase transition">СЛЕЖЕНИЕ</button>
+            </div>
+        </div>
+
+        <!-- 4-Metric Telemetry Strip + Dual-Trace Oscilloscope -->
+        <div class="grid grid-cols-5 sm:flex sm:items-center sm:justify-between gap-1.5 sm:gap-3 hyper-panel rounded-xl px-2.5 py-1.5 sm:px-3.5 sm:py-2">
+            <div class="flex flex-col">
+                <span class="text-[7.5px] sm:text-[9px] font-semibold tracking-wider text-slate-400 uppercase">СЖАТИЕ</span>
+                <span id="compression-readout" class="mono text-[11px] sm:text-base font-bold text-rose-400 leading-tight">0%</span>
+            </div>
+
+            <div class="flex flex-col">
+                <span class="text-[7.5px] sm:text-[9px] font-semibold tracking-wider text-slate-400 uppercase">ДАВЛЕНИЕ</span>
+                <span id="pressure-readout" class="mono text-[11px] sm:text-base font-bold text-sky-400 leading-tight">101 <span class="text-[8px] font-normal text-slate-400">кПа</span></span>
+            </div>
+
+            <div class="flex flex-col">
+                <span class="text-[7.5px] sm:text-[9px] font-semibold tracking-wider text-slate-400 uppercase">СКОРОСТЬ</span>
+                <span id="velocity-readout" class="mono text-[11px] sm:text-base font-bold text-amber-400 leading-tight">0.0 <span class="text-[8px] font-normal text-slate-400">м/с</span></span>
+            </div>
+
+            <div class="flex flex-col">
+                <span class="text-[7.5px] sm:text-[9px] font-semibold tracking-wider text-slate-400 uppercase">ЭНЕРГИЯ</span>
+                <span id="energy-readout" class="mono text-[11px] sm:text-base font-bold text-emerald-400 leading-tight">0.0 <span class="text-[8px] font-normal text-slate-400">Дж</span></span>
+            </div>
+
+            <div class="flex flex-col items-end justify-center">
+                <span class="text-[7px] sm:text-[8px] font-semibold tracking-wider text-slate-400 uppercase mb-0.5">НАПРЯЖЕНИЕ</span>
+                <canvas id="tension-graph" width="90" height="22" class="w-full max-w-[90px] h-[22px] rounded bg-slate-950/90 border border-slate-800/80"></canvas>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main 3D Interactive Viewport -->
+    <main id="viewport-wrap" class="relative flex-1 w-full h-full flex items-center justify-center overflow-hidden">
+        <div id="canvas-container" class="w-full h-full absolute inset-0"></div>
+
+        <!-- Gesture Hint Pill -->
+        <div id="drag-hint" class="absolute top-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none transition-opacity duration-700 w-max max-w-[94vw]">
+            <div class="px-3 py-1 rounded-full bg-slate-950/85 border border-sky-500/35 text-[10px] sm:text-[11px] text-sky-200 flex items-center gap-2 shadow-xl backdrop-blur-md">
+                <span class="inline-block w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                <span>Тяни кольцо • Тапни по гелю для волны • Фон — 3D</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- Compact Collapsible Bottom Control Dock -->
+    <footer class="w-full px-3 pb-3 pt-1 sm:px-5 sm:pb-4 z-20 flex flex-col items-center pointer-events-none">
+        <div class="hyper-panel rounded-2xl p-2.5 sm:p-3.5 w-full max-w-[540px] pointer-events-auto">
+            
+            <!-- Quick Action Toys Row (Always Accessible!) -->
+            <div class="grid grid-cols-4 gap-1.5 mb-2.5">
+                <button id="btn-impulse" class="py-2 px-1 rounded-xl bg-gradient-to-r from-rose-600/40 to-orange-500/30 hover:from-rose-600/60 active:scale-95 border border-rose-400/50 text-[9.5px] sm:text-[10px] font-extrabold tracking-wider text-rose-200 uppercase transition shadow-lg">
+                    ⚡ ИМПУЛЬС
+                </button>
+                <button id="btn-shockwave" class="py-2 px-1 rounded-xl bg-gradient-to-r from-cyan-600/40 to-blue-500/30 hover:from-cyan-600/60 active:scale-95 border border-cyan-400/50 text-[9.5px] sm:text-[10px] font-extrabold tracking-wider text-cyan-200 uppercase transition shadow-lg">
+                    🌊 УДАРНАЯ ВОЛНА
+                </button>
+                <button id="btn-auto" class="py-2 px-1 rounded-xl bg-emerald-950/80 hover:bg-emerald-900/90 active:scale-95 border border-emerald-500/40 text-[9.5px] sm:text-[10px] font-bold tracking-wider text-emerald-300 uppercase transition flex items-center justify-center gap-1">
+                    <span id="auto-dot" class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                    <span>АВТО</span>
+                </button>
+                <button id="btn-sound" class="py-2 px-1 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-95 border border-slate-600/50 text-[9.5px] sm:text-[10px] font-bold tracking-wider text-slate-300 uppercase transition">
+                    ЗВУК: ВЫКЛ
+                </button>
+            </div>
+
+            <!-- Futuristic Pill Tabs + Collapse Toggle -->
+            <div class="flex items-center justify-between gap-1.5 mb-2">
+                <div class="grid grid-cols-3 gap-1 flex-1 bg-slate-950/85 p-1 rounded-xl border border-slate-800/90">
+                    <button data-tab="physics" class="tab-btn py-1 rounded-lg bg-sky-500/25 text-sky-300 text-[9.5px] font-bold tracking-wider uppercase transition">ФИЗИКА</button>
+                    <button data-tab="material" class="tab-btn py-1 rounded-lg text-slate-400 hover:text-slate-200 text-[9.5px] font-bold tracking-wider uppercase transition">МАТЕРИАЛ</button>
+                    <button data-tab="mode" class="tab-btn py-1 rounded-lg text-slate-400 hover:text-slate-200 text-[9.5px] font-bold tracking-wider uppercase transition">РЕЖИМ</button>
+                </div>
+                <button id="btn-collapse" title="Свернуть/развернуть панель" class="px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700/70 text-slate-300 text-[10px] font-bold active:scale-95 transition">
+                    ▼
+                </button>
+            </div>
+
+            <!-- Tab Content Container -->
+            <div id="tab-panels" class="transition-all duration-200 max-h-[34vh] overflow-y-auto pr-0.5">
+                
+                <!-- TAB 1: ФИЗИКА (Sliders + Visualization Modes) -->
+                <div id="panel-physics" class="space-y-2.5">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label for="length-slider" class="text-[9.5px] font-semibold tracking-wider text-slate-300 uppercase">ДЛИНА КАПСУЛЫ</label>
+                                <span id="length-val" class="mono text-[10.5px] font-bold text-emerald-400">330 мм</span>
+                            </div>
+                            <input id="length-slider" class="length-slider" type="range" min="160" max="540" value="330" step="5">
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label for="diameter-slider" class="text-[9.5px] font-semibold tracking-wider text-slate-300 uppercase">ДИАМЕТР КАПСУЛЫ</label>
+                                <span id="diameter-val" class="mono text-[10.5px] font-bold text-sky-400">86 мм</span>
+                            </div>
+                            <input id="diameter-slider" type="range" min="52" max="124" value="86" step="1">
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label for="aperture-slider" class="text-[9.5px] font-semibold tracking-wider text-slate-300 uppercase">ПРОСВЕТ КОЛЬЦА</label>
+                                <span id="aperture-val" class="mono text-[10.5px] font-bold text-rose-400">46 мм</span>
+                            </div>
+                            <input id="aperture-slider" class="ring-slider" type="range" min="24" max="116" value="46" step="1">
+                        </div>
+                    </div>
+
+                    <!-- Visualization Mode Pills -->
+                    <div class="grid grid-cols-3 gap-1.5 pt-0.5">
+                        <button data-vis="studio" class="vis-btn py-1.5 px-2 rounded-lg bg-sky-500/25 border border-sky-400/50 text-[9.5px] font-bold tracking-wider text-sky-200 uppercase transition">
+                            СТУДИЯ PBR
+                        </button>
+                        <button data-vis="cutaway" class="vis-btn py-1.5 px-2 rounded-lg bg-slate-900/80 border border-slate-700/70 text-[9.5px] font-bold tracking-wider text-slate-400 uppercase transition">
+                            РАЗРЕЗ
+                        </button>
+                        <button data-vis="thermal" class="vis-btn py-1.5 px-2 rounded-lg bg-slate-900/80 border border-slate-700/70 text-[9.5px] font-bold tracking-wider text-slate-400 uppercase transition">
+                            ТЕПЛОВИЗОР
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TAB 2: МАТЕРИАЛ (5 AAA PBR Presets) -->
+                <div id="panel-material" class="hidden grid grid-cols-3 sm:grid-cols-5 gap-1.5">
+                    <button data-mat="0" class="mat-btn py-2 px-1.5 rounded-xl bg-emerald-500/25 border border-emerald-400/60 text-[9px] font-bold tracking-wider text-emerald-200 uppercase transition">
+                        БИО-ГЕЛЬ
+                    </button>
+                    <button data-mat="1" class="mat-btn py-2 px-1.5 rounded-xl bg-slate-900/80 border border-slate-700/70 text-[9px] font-bold tracking-wider text-slate-400 uppercase transition">
+                        КИБЕР-ПЛАЗМА
+                    </button>
+                    <button data-mat="2" class="mat-btn py-2 px-1.5 rounded-xl bg-slate-900/80 border border-slate-700/70 text-[9px] font-bold tracking-wider text-slate-400 uppercase transition">
+                        ЖИДКОЕ ЗОЛОТО
+                    </button>
+                    <button data-mat="3" class="mat-btn py-2 px-1.5 rounded-xl bg-slate-900/80 border border-slate-700/70 text-[9px] font-bold tracking-wider text-slate-400 uppercase transition">
+                        КРИО-СТЕКЛО
+                    </button>
+                    <button data-mat="4" class="mat-btn py-2 px-1.5 rounded-xl bg-slate-900/80 border border-slate-700/70 text-[9px] font-bold tracking-wider text-slate-400 uppercase transition col-span-2 sm:col-span-1">
+                        МАГМА-ЯДРО
+                    </button>
+                </div>
+
+                <!-- TAB 3: РЕЖИМ КОЛЬЦА (Single, Dual Grip, Pulsar) -->
+                <div id="panel-mode" class="hidden grid grid-cols-3 gap-1.5">
+                    <button data-rmode="single" class="rmode-btn py-2 px-2 rounded-xl bg-rose-500/25 border border-rose-400/60 text-[9.5px] font-bold tracking-wider text-rose-200 uppercase transition">
+                        ОДНО КОЛЬЦО
+                    </button>
+                    <button data-rmode="dual" class="rmode-btn py-2 px-2 rounded-xl bg-slate-900/80 border border-slate-700/70 text-[9.5px] font-bold tracking-wider text-slate-400 uppercase transition">
+                        ДВОЙНОЙ ЗАХВАТ
+                    </button>
+                    <button data-rmode="pulsar" class="rmode-btn py-2 px-2 rounded-xl bg-slate-900/80 border border-slate-700/70 text-[9.5px] font-bold tracking-wider text-slate-400 uppercase transition">
+                        ПУЛЬСАР
+                    </button>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        /**
+         * LAB-DYNAMICS // ЭЛАСТИЧНОСТЬ 50X HYPER-EDITION
+         * Procedural PMREM Studio HDRI + 200-Node Continuum Soft-Body Solver
+         * + Internal Hydrodynamic Core Particles + Contact Micro-Sparks + Multi-Layer Web Audio
+         */
+        (function () {
+            // --- 5 AAA Material Presets ---
+            const MATERIALS = [
+                {
+                    name: 'БИО-ГЕЛЬ',
+                    baseHex: '#042f24',
+                    spotA: 'rgba(52, 211, 153, 0.65)',
+                    spotB: 'rgba(16, 185, 129, 0.35)',
+                    grid: 'rgba(167, 243, 208, 0.32)',
+                    color: 0x34d399,
+                    emissive: 0x065f46,
+                    emissiveInt: 0.45,
+                    roughness: 0.14,
+                    metalness: 0.04,
+                    transmission: 0.36,
+                    ior: 1.44,
+                    coreColor: 0x10b981,
+                    particleColor: 0x6ee7b7,
+                    ledClass: 'bg-emerald-400 shadow-[0_0_12px_#34d399]',
+                    btnClass: 'bg-emerald-500/25 border-emerald-400/60 text-emerald-200'
+                },
+                {
+                    name: 'КИБЕР-ПЛАЗМА',
+                    baseHex: '#061e3a',
+                    spotA: 'rgba(34, 211, 238, 0.72)',
+                    spotB: 'rgba(232, 121, 249, 0.45)',
+                    grid: 'rgba(125, 211, 252, 0.42)',
+                    color: 0x22d3ee,
+                    emissive: 0x1d4ed8,
+                    emissiveInt: 0.65,
+                    roughness: 0.10,
+                    metalness: 0.12,
+                    transmission: 0.42,
+                    ior: 1.52,
+                    coreColor: 0xe879f9,
+                    particleColor: 0x38bdf8,
+                    ledClass: 'bg-cyan-400 shadow-[0_0_12px_#22d3ee]',
+                    btnClass: 'bg-cyan-500/25 border-cyan-400/60 text-cyan-200'
+                },
+                {
+                    name: 'ЖИДКОЕ ЗОЛОТО',
+                    baseHex: '#422006',
+                    spotA: 'rgba(251, 191, 36, 0.75)',
+                    spotB: 'rgba(245, 158, 11, 0.45)',
+                    grid: 'rgba(254, 240, 138, 0.32)',
+                    color: 0xfbbf24,
+                    emissive: 0x78350f,
+                    emissiveInt: 0.32,
+                    roughness: 0.12,
+                    metalness: 0.88,
+                    transmission: 0.04,
+                    ior: 1.85,
+                    coreColor: 0xfef08a,
+                    particleColor: 0xfde047,
+                    ledClass: 'bg-amber-400 shadow-[0_0_12px_#fbbf24]',
+                    btnClass: 'bg-amber-500/25 border-amber-400/60 text-amber-200'
+                },
+                {
+                    name: 'КРИО-СТЕКЛО',
+                    baseHex: '#082f49',
+                    spotA: 'rgba(186, 230, 253, 0.68)',
+                    spotB: 'rgba(56, 189, 248, 0.35)',
+                    grid: 'rgba(224, 242, 254, 0.45)',
+                    color: 0xbae6fd,
+                    emissive: 0x0284c7,
+                    emissiveInt: 0.35,
+                    roughness: 0.06,
+                    metalness: 0.05,
+                    transmission: 0.62,
+                    ior: 1.58,
+                    coreColor: 0x38bdf8,
+                    particleColor: 0xe0f2fe,
+                    ledClass: 'bg-sky-300 shadow-[0_0_12px_#7dd3fc]',
+                    btnClass: 'bg-sky-500/25 border-sky-300/60 text-sky-100'
+                },
+                {
+                    name: 'МАГМА-ЯДРО',
+                    baseHex: '#1c0a05',
+                    spotA: 'rgba(249, 115, 22, 0.82)',
+                    spotB: 'rgba(220, 38, 38, 0.58)',
+                    grid: 'rgba(253, 186, 116, 0.38)',
+                    color: 0xf97316,
+                    emissive: 0x9a3412,
+                    emissiveInt: 0.78,
+                    roughness: 0.36,
+                    metalness: 0.18,
+                    transmission: 0.18,
+                    ior: 1.48,
+                    coreColor: 0xffedd5,
+                    particleColor: 0xfb923c,
+                    ledClass: 'bg-orange-500 shadow-[0_0_12px_#f97316]',
+                    btnClass: 'bg-orange-500/25 border-orange-400/60 text-orange-200'
+                }
+            ];
+
+            // --- 200-Node Continuum Soft-Body Arrays ---
+            const NODE_COUNT = 200;
+            const RADIAL_SEGMENTS = 64;
+            const DEFAULT_HALF_LENGTH = 1.65;
+            const RING_TUBE_RADIUS = 0.088;
+            const SKIN_CLEARANCE = 0.005;
+
+            const nodes = {
+                u: new Float32Array(NODE_COUNT),
+                restR: new Float32Array(NODE_COUNT),
+                r: new Float32Array(NODE_COUNT),
+                vr: new Float32Array(NODE_COUNT),
+                axialDisp: new Float32Array(NODE_COUNT),
+                vAxial: new Float32Array(NODE_COUNT),
+                stress: new Float32Array(NODE_COUNT)
+            };
+            for (let i = 0; i < NODE_COUNT; i++) {
+                nodes.u[i] = -1 + (2 * i) / (NODE_COUNT - 1);
+            }
+
+            // --- Simulation State ---
+            const state = {
+                capsuleLengthMm: 330,
+                restHalfLength: DEFAULT_HALF_LENGTH,
+                capsuleDiameterMm: 86,
+                ringApertureMm: 46,
+                ringX: 2.35,
+                targetRingX: 2.35,
+                ringVx: 0,
+                ring2X: -2.35,         // Secondary ring for "ДВОЙНОЙ ЗАХВАТ" mode
+                ring2Vx: 0,
+                ringMode: 'single',    // 'single' | 'dual' | 'pulsar'
+                visMode: 'studio',     // 'studio' | 'cutaway' | 'thermal'
+                camMode: 'orbit',      // 'orbit' | 'follow'
+                materialIndex: 0,
+                dragMode: 'none',      // 'ring' | 'camera' | 'pinch' | 'none'
+                lastPointerX: 0,
+                lastPointerY: 0,
+                recentDragVx: 0,
+                pinchStartDist: 0,
+                pinchStartZoom: 6.4,
+                autoOscillate: false,
+                autoPhase: 0,
+                compressionPct: 0,
+                pressureKpa: 101.3,
+                energyJoules: 0,
+                endElongation: 0,
+                cameraShake: 0,
+                time: 0,
+                lastHapticTime: 0,
+                soundEnabled: false,
+                panelCollapsed: false
+            };
+
+            const camOrbit = {
+                theta: 0.34,
+                phi: 0.22,
+                radius: 6.4,
+                targetTheta: 0.34,
+                targetPhi: 0.22,
+                targetRadius: 6.4,
+                lookX: 0
+            };
+
+            // --- DOM References ---
+            const container = document.getElementById('canvas-container');
+            const viewportWrap = document.getElementById('viewport-wrap');
+            const lengthSlider = document.getElementById('length-slider');
+            const diameterSlider = document.getElementById('diameter-slider');
+            const apertureSlider = document.getElementById('aperture-slider');
+            const lengthVal = document.getElementById('length-val');
+            const diameterVal = document.getElementById('diameter-val');
+            const apertureVal = document.getElementById('aperture-val');
+
+            const compressionReadout = document.getElementById('compression-readout');
+            const pressureReadout = document.getElementById('pressure-readout');
+            const velocityReadout = document.getElementById('velocity-readout');
+            const energyReadout = document.getElementById('energy-readout');
+            const dragHint = document.getElementById('drag-hint');
+            const statusLed = document.getElementById('status-led');
+
+            const btnImpulse = document.getElementById('btn-impulse');
+            const btnShockwave = document.getElementById('btn-shockwave');
+            const btnAuto = document.getElementById('btn-auto');
+            const autoDot = document.getElementById('auto-dot');
+            const btnSound = document.getElementById('btn-sound');
+            const btnCollapse = document.getElementById('btn-collapse');
+            const tabPanels = document.getElementById('tab-panels');
+
+            const graphCanvas = document.getElementById('tension-graph');
+            const graphCtx = graphCanvas.getContext('2d');
+            const stressHistory = new Array(45).fill(0);
+            const velHistory = new Array(45).fill(0);
+
+            // --- Multi-Layered Procedural Web Audio Synthesizer ---
+            let audioCtx = null;
+            let humOsc = null;
+            let squelchOsc = null;
+            let squelchFilter = null;
+            let masterSynthGain = null;
+
+            function initAudio() {
+                if (audioCtx) return;
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+
+                audioCtx = new AudioCtx();
+                humOsc = audioCtx.createOscillator();
+                squelchOsc = audioCtx.createOscillator();
+                squelchFilter = audioCtx.createBiquadFilter();
+                masterSynthGain = audioCtx.createGain();
+
+                humOsc.type = 'sine';
+                humOsc.frequency.value = 52;
+
+                squelchOsc.type = 'sawtooth';
+                squelchOsc.frequency.value = 110;
+
+                squelchFilter.type = 'bandpass';
+                squelchFilter.frequency.value = 280;
+                squelchFilter.Q.value = 7.0;
+
+                masterSynthGain.gain.value = 0;
+
+                humOsc.connect(squelchFilter);
+                squelchOsc.connect(squelchFilter);
+                squelchFilter.connect(masterSynthGain);
+                masterSynthGain.connect(audioCtx.destination);
+
+                humOsc.start();
+                squelchOsc.start();
+            }
+
+            function triggerBoingSound(intensity = 0.7, pitchBoost = 0) {
+                if (!state.soundEnabled || !audioCtx) return;
+                try {
+                    const now = audioCtx.currentTime;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    const baseFreq = 110 + pitchBoost * 90;
+                    osc.frequency.setValueAtTime(baseFreq, now);
+                    osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.65, now + 0.06);
+                    osc.frequency.exponentialRampToValueAtTime(42, now + 0.28);
+
+                    gain.gain.setValueAtTime(Math.min(0.18, 0.05 + intensity * 0.12), now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.29);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.30);
+                } catch (e) {}
+            }
+
+            function updateAudioSynth(compNorm, speed) {
+                if (!state.soundEnabled || !audioCtx || !masterSynthGain) return;
+                const now = audioCtx.currentTime;
+                const activity = compNorm > 0.02 ? Math.min(1, compNorm * (0.25 + Math.min(1.4, speed * 0.32))) : 0;
+                masterSynthGain.gain.setTargetAtTime(activity * 0.075, now, 0.035);
+                humOsc.frequency.setTargetAtTime(48 + compNorm * 55, now, 0.04);
+                squelchOsc.frequency.setTargetAtTime(95 + compNorm * 160 + speed * 28, now, 0.04);
+                squelchFilter.frequency.setTargetAtTime(220 + compNorm * 680 + speed * 85, now, 0.04);
+            }
+
+            btnSound.addEventListener('click', () => {
+                initAudio();
+                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                state.soundEnabled = !state.soundEnabled;
+                if (state.soundEnabled) {
+                    btnSound.textContent = 'ЗВУК: ВКЛ';
+                    btnSound.classList.add('border-emerald-400/60', 'text-emerald-200', 'bg-emerald-950/90');
+                    triggerBoingSound(0.5, 0.3);
+                } else {
+                    btnSound.textContent = 'ЗВУК: ВЫКЛ';
+                    btnSound.classList.remove('border-emerald-400/60', 'text-emerald-200', 'bg-emerald-950/90');
+                    if (masterSynthGain && audioCtx) masterSynthGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.03);
+                }
+            });
+
+            // --- Three.js Scene, Renderer & Procedural Studio HDRI (PMREMGenerator) ---
+            const scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x03050a, 0.018);
+
+            const camera = new THREE.PerspectiveCamera(
+                40,
+                container.clientWidth / Math.max(1, container.clientHeight),
+                0.1,
+                160
+            );
+
+            const renderer = new THREE.WebGLRenderer({
+                antialias: true,
+                alpha: true,
+                powerPreference: 'high-performance'
+            });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.24;
+            container.appendChild(renderer.domElement);
+
+            // Generate Procedural Studio HDRI Environment Map for AAA Specular & Fresnel Reflections
+            function buildStudioEnvironment() {
+                const pmremGenerator = new THREE.PMREMGenerator(renderer);
+                pmremGenerator.compileEquirectangularShader();
+
+                const envScene = new THREE.Scene();
+                envScene.background = new THREE.Color(0x040812);
+
+                // Overhead studio softbox
+                const topBox = new THREE.Mesh(
+                    new THREE.PlaneGeometry(14, 6),
+                    new THREE.MeshBasicMaterial({ color: 0xe0f2fe, side: THREE.DoubleSide })
+                );
+                topBox.position.set(0, 7, 0);
+                topBox.rotation.x = Math.PI / 2;
+                envScene.add(topBox);
+
+                // Cyan & Magenta studio rim light strips
+                const leftStrip = new THREE.Mesh(
+                    new THREE.PlaneGeometry(12, 2.2),
+                    new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide })
+                );
+                leftStrip.position.set(-6, 2.5, -5);
+                leftStrip.lookAt(0, 0, 0);
+                envScene.add(leftStrip);
+
+                const rightStrip = new THREE.Mesh(
+                    new THREE.PlaneGeometry(12, 2.2),
+                    new THREE.MeshBasicMaterial({ color: 0xf43f5e, side: THREE.DoubleSide })
+                );
+                rightStrip.position.set(6, 2.0, 5);
+                rightStrip.lookAt(0, 0, 0);
+                envScene.add(rightStrip);
+
+                const envRT = pmremGenerator.fromScene(envScene, 0.04);
+                scene.environment = envRT.texture;
+                pmremGenerator.dispose();
+            }
+            buildStudioEnvironment();
+
+            // Studio Lights
+            const ambientLight = new THREE.AmbientLight(0x1e293b, 1.1);
+            scene.add(ambientLight);
+
+            const keyLight = new THREE.DirectionalLight(0xffffff, 1.45);
+            keyLight.position.set(3, 6, 4.5);
+            scene.add(keyLight);
+
+            const rimLight = new THREE.DirectionalLight(0x38bdf8, 1.2);
+            rimLight.position.set(-4.5, 2.5, -4);
+            scene.add(rimLight);
+
+            const ringLight1 = new THREE.PointLight(0xff2a6d, 2.8, 5.2);
+            scene.add(ringLight1);
+
+            const ringLight2 = new THREE.PointLight(0x38bdf8, 0, 5.2);
+            scene.add(ringLight2);
+
+            // Reflective Obsidian Lab Floor + Cyber Grid
+            const floorGeo = new THREE.PlaneGeometry(64, 64);
+            floorGeo.rotateX(-Math.PI / 2);
+            const floorMat = new THREE.MeshStandardMaterial({
+                color: 0x050914,
+                roughness: 0.22,
+                metalness: 0.75
+            });
+            const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+            floorMesh.position.y = -1.85;
+            scene.add(floorMesh);
+
+            const gridHelper = new THREE.GridHelper(48, 72, 0x1d4ed8, 0x0f172a);
+            gridHelper.position.y = -1.84;
+            gridHelper.material.transparent = true;
+            gridHelper.material.opacity = 0.45;
+            scene.add(gridHelper);
+
+            // --- Procedural Gel Skin Texture ---
+            function generateGelTextures(preset) {
+                const size = 512;
+                const colorCanvas = document.createElement('canvas');
+                colorCanvas.width = size;
+                colorCanvas.height = size;
+                const ctx = colorCanvas.getContext('2d');
+
+                const bumpCanvas = document.createElement('canvas');
+                bumpCanvas.width = size;
+                bumpCanvas.height = size;
+                const bCtx = bumpCanvas.getContext('2d');
+
+                ctx.fillStyle = preset.baseHex;
+                ctx.fillRect(0, 0, size, size);
+
+                bCtx.fillStyle = '#808080';
+                bCtx.fillRect(0, 0, size, size);
+
+                for (let i = 0; i < 160; i++) {
+                    const x = Math.random() * size;
+                    const y = Math.random() * size;
+                    const r = 10 + Math.random() * 28;
+                    const grad = ctx.createRadialGradient(x, y, 1, x, y, r);
+                    grad.addColorStop(0, Math.random() > 0.45 ? preset.spotA : preset.spotB);
+                    grad.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(x, y, r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Precision circumferential rings & longitudinal fibers to show skin bunching
+                ctx.strokeStyle = preset.grid;
+                ctx.lineWidth = 1.5;
+                bCtx.strokeStyle = 'rgba(215, 215, 215, 0.5)';
+                bCtx.lineWidth = 2.0;
+
+                for (let x = 0; x <= size; x += 16) {
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, size); ctx.stroke();
+                    bCtx.beginPath(); bCtx.moveTo(x, 0); bCtx.lineTo(x, size); bCtx.stroke();
+                }
+                for (let y = 0; y <= size; y += 32) {
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(size, y); ctx.stroke();
+                }
+
+                const mapTex = new THREE.CanvasTexture(colorCanvas);
+                mapTex.wrapS = THREE.RepeatWrapping;
+                mapTex.wrapT = THREE.RepeatWrapping;
+
+                const bumpTex = new THREE.CanvasTexture(bumpCanvas);
+                bumpTex.wrapS = THREE.RepeatWrapping;
+                bumpTex.wrapT = THREE.RepeatWrapping;
+
+                return { mapTex, bumpTex };
+            }
+
+            let textures = generateGelTextures(MATERIALS[0]);
+
+            // --- Build 200-Node Soft-Body Capsule Mesh ---
+            const capsuleGeo = new THREE.CylinderGeometry(1, 1, 2, RADIAL_SEGMENTS, NODE_COUNT - 1, false);
+            capsuleGeo.rotateZ(-Math.PI / 2);
+
+            const posAttr = capsuleGeo.attributes.position;
+            const vertexCount = posAttr.count;
+            const vertNodeIdx = new Int16Array(vertexCount);
+            const vertTheta = new Float32Array(vertexCount);
+            const vertIsCapCenter = new Uint8Array(vertexCount);
+            const colors = new Float32Array(vertexCount * 3);
+
+            for (let i = 0; i < vertexCount; i++) {
+                const x = posAttr.getX(i);
+                const y = posAttr.getY(i);
+                const z = posAttr.getZ(i);
+                const rad = Math.hypot(y, z);
+
+                const clampedX = Math.max(-1, Math.min(1, x));
+                const idx = Math.round(((clampedX + 1) * 0.5) * (NODE_COUNT - 1));
+                vertNodeIdx[i] = Math.max(0, Math.min(NODE_COUNT - 1, idx));
+                vertTheta[i] = Math.atan2(z, y);
+                vertIsCapCenter[i] = rad < 0.001 ? 1 : 0;
+
+                colors[i * 3] = 0.1;
+                colors[i * 3 + 1] = 0.9;
+                colors[i * 3 + 2] = 0.6;
+            }
+            capsuleGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const capsuleMaterial = new THREE.MeshPhysicalMaterial({
+                map: textures.mapTex,
+                bumpMap: textures.bumpTex,
+                bumpScale: 0.016,
+                color: MATERIALS[0].color,
+                emissive: MATERIALS[0].emissive,
+                emissiveIntensity: MATERIALS[0].emissiveInt,
+                roughness: MATERIALS[0].roughness,
+                metalness: MATERIALS[0].metalness,
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.08,
+                transmission: MATERIALS[0].transmission,
+                thickness: 1.35,
+                ior: MATERIALS[0].ior,
+                transparent: true,
+                opacity: 0.94,
+                envMapIntensity: 1.35,
+                vertexColors: false
+            });
+
+            const capsuleMesh = new THREE.Mesh(capsuleGeo, capsuleMaterial);
+            scene.add(capsuleMesh);
+
+            // Wireframe Overlay (prominent in "РАЗРЕЗ" Cutaway Mode)
+            const wireMaterial = new THREE.MeshBasicMaterial({
+                color: 0x38bdf8,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.04
+            });
+            const wireMesh = new THREE.Mesh(capsuleGeo, wireMaterial);
+            scene.add(wireMesh);
+
+            // --- Glowing Biomechanical / Plasma Internal Core & Hydrodynamic Flow Bubbles ---
+            const coreGeo = new THREE.CylinderGeometry(0.11, 0.11, DEFAULT_HALF_LENGTH * 1.72, 24, 32);
+            coreGeo.rotateZ(-Math.PI / 2);
+            const coreMat = new THREE.MeshBasicMaterial({
+                color: MATERIALS[0].coreColor,
+                transparent: true,
+                opacity: 0.36
+            });
+            const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+            scene.add(coreMesh);
+
+            // 240 Suspended Micro-Bubbles inside the Gel that accelerate through the bottleneck!
+            const BUBBLE_COUNT = 240;
+            const bubbleData = [];
+            const bubbleGeo = new THREE.BufferGeometry();
+            const bubblePositions = new Float32Array(BUBBLE_COUNT * 3);
+
+            for (let i = 0; i < BUBBLE_COUNT; i++) {
+                const u = (Math.random() * 2 - 1) * 0.85;
+                const angle = Math.random() * Math.PI * 2;
+                const radialRatio = 0.18 + Math.random() * 0.62;
+                bubbleData.push({ u, angle, radialRatio, speedOffset: 0.6 + Math.random() * 0.8 });
+                bubblePositions[i * 3] = u * state.restHalfLength;
+                bubblePositions[i * 3 + 1] = Math.cos(angle) * 0.3;
+                bubblePositions[i * 3 + 2] = Math.sin(angle) * 0.3;
+            }
+            bubbleGeo.setAttribute('position', new THREE.BufferAttribute(bubblePositions, 3));
+
+            const bubbleMat = new THREE.PointsMaterial({
+                color: MATERIALS[0].particleColor,
+                size: 0.045,
+                transparent: true,
+                opacity: 0.72,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+            const bubblePoints = new THREE.Points(bubbleGeo, bubbleMat);
+            scene.add(bubblePoints);
+
+            // --- Contact Friction Micro-Sparks / Mist Emitter ---
+            const SPARK_COUNT = 90;
+            const sparkGeo = new THREE.BufferGeometry();
+            const sparkPositions = new Float32Array(SPARK_COUNT * 3);
+            const sparkVel = [];
+            const sparkLife = new Float32Array(SPARK_COUNT);
+
+            for (let i = 0; i < SPARK_COUNT; i++) {
+                sparkPositions[i * 3] = 0;
+                sparkPositions[i * 3 + 1] = -99;
+                sparkPositions[i * 3 + 2] = 0;
+                sparkVel.push({ vx: 0, vy: 0, vz: 0 });
+                sparkLife[i] = 0;
+            }
+            sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPositions, 3));
+
+            const sparkMat = new THREE.PointsMaterial({
+                color: 0xff7597,
+                size: 0.055,
+                transparent: true,
+                opacity: 0.88,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+            const sparkPoints = new THREE.Points(sparkGeo, sparkMat);
+            scene.add(sparkPoints);
+            let nextSparkIdx = 0;
+
+            function spawnContactSpark(xPos, radius, ringSpeed) {
+                const idx = nextSparkIdx;
+                nextSparkIdx = (nextSparkIdx + 1) % SPARK_COUNT;
+
+                const angle = Math.random() * Math.PI * 2;
+                const r = radius + 0.015;
+                sparkPositions[idx * 3] = xPos + (Math.random() - 0.5) * 0.06;
+                sparkPositions[idx * 3 + 1] = Math.cos(angle) * r;
+                sparkPositions[idx * 3 + 2] = Math.sin(angle) * r;
+
+                const outSpeed = 0.6 + Math.random() * 1.4;
+                sparkVel[idx].vx = -ringSpeed * 0.25 + (Math.random() - 0.5) * 0.7;
+                sparkVel[idx].vy = Math.cos(angle) * outSpeed;
+                sparkVel[idx].vz = Math.sin(angle) * outSpeed;
+                sparkLife[idx] = 1.0;
+            }
+
+            // --- Build Primary & Secondary External Compression Rings ---
+            function createCompressionRing(colorHex, emissiveHex) {
+                const group = new THREE.Group();
+                const innerR = (state.ringApertureMm / 100) * 0.92;
+                const majorR = innerR + RING_TUBE_RADIUS;
+
+                const rGeo = new THREE.TorusGeometry(majorR, RING_TUBE_RADIUS, 36, 84);
+                rGeo.rotateY(Math.PI / 2);
+                const rMat = new THREE.MeshPhysicalMaterial({
+                    color: colorHex,
+                    emissive: emissiveHex,
+                    emissiveIntensity: 1.05,
+                    roughness: 0.14,
+                    metalness: 0.45,
+                    clearcoat: 1.0,
+                    envMapIntensity: 1.4
+                });
+                const mesh = new THREE.Mesh(rGeo, rMat);
+                group.add(mesh);
+
+                // Inner Contact Glow Rim
+                const rimGeo = new THREE.TorusGeometry(innerR + 0.004, 0.013, 16, 72);
+                rimGeo.rotateY(Math.PI / 2);
+                const rimMat = new THREE.MeshBasicMaterial({
+                    color: 0xffffff,
+                    transparent: true,
+                    opacity: 0.0
+                });
+                const rimMesh = new THREE.Mesh(rimGeo, rimMat);
+                group.add(rimMesh);
+
+                // Outer Plasma Halo
+                const hGeo = new THREE.TorusGeometry(majorR, RING_TUBE_RADIUS * 1.9, 16, 56);
+                hGeo.rotateY(Math.PI / 2);
+                const hMat = new THREE.MeshBasicMaterial({
+                    color: colorHex,
+                    transparent: true,
+                    opacity: 0.22,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false
+                });
+                const haloMesh = new THREE.Mesh(hGeo, hMat);
+                group.add(haloMesh);
+
+                return { group, mesh, rMat, rimMesh, rimMat, haloMesh, hMat };
+            }
+
+            const ring1 = createCompressionRing(0xff3b6b, 0xff1752);
+            scene.add(ring1.group);
+
+            const ring2 = createCompressionRing(0x38bdf8, 0x0284c7);
+            ring2.group.visible = false;
+            scene.add(ring2.group);
+
+            // Touch Hitbox on Primary Ring
+            const hitBoxGeo = new THREE.CylinderGeometry(1.35, 1.35, 0.98, 16);
+            hitBoxGeo.rotateZ(Math.PI / 2);
+            const ringHitBox = new THREE.Mesh(hitBoxGeo, new THREE.MeshBasicMaterial({ visible: false }));
+            ring1.group.add(ringHitBox);
+
+            let currentInnerRadius = (state.ringApertureMm / 100) * 0.92;
+            let currentMajorRadius = currentInnerRadius + RING_TUBE_RADIUS;
+
+            function syncRingGeometries(innerR) {
+                const majorR = innerR + RING_TUBE_RADIUS;
+                if (Math.abs(innerR - currentInnerRadius) < 0.0008) return;
+                currentInnerRadius = innerR;
+                currentMajorRadius = majorR;
+
+                [ring1, ring2].forEach((rObj) => {
+                    rObj.mesh.geometry.dispose();
+                    const ng = new THREE.TorusGeometry(majorR, RING_TUBE_RADIUS, 36, 84);
+                    ng.rotateY(Math.PI / 2);
+                    rObj.mesh.geometry = ng;
+
+                    rObj.rimMesh.geometry.dispose();
+                    const nrim = new THREE.TorusGeometry(innerR + 0.004, 0.013, 16, 72);
+                    nrim.rotateY(Math.PI / 2);
+                    rObj.rimMesh.geometry = nrim;
+
+                    rObj.haloMesh.geometry.dispose();
+                    const nh = new THREE.TorusGeometry(majorR, RING_TUBE_RADIUS * 1.9, 16, 56);
+                    nh.rotateY(Math.PI / 2);
+                    rObj.haloMesh.geometry = nh;
+                });
+            }
+
+            // Initialize Soft-Body Nodes
+            function resetNodes() {
+                const baseR = (state.capsuleDiameterMm / 100) * 0.92;
+                const capStartU = Math.max(0.55, 1.0 - (0.36 / Math.max(0.8, state.restHalfLength)));
+                const capSpanU = 1.0 - capStartU;
+                for (let i = 0; i < NODE_COUNT; i++) {
+                    const absU = Math.abs(nodes.u[i]);
+                    let cap = 1.0;
+                    if (absU > capStartU) {
+                        const t = (absU - capStartU) / capSpanU;
+                        cap = Math.sqrt(Math.max(0.0001, 1.0 - t * t));
+                    }
+                    nodes.restR[i] = baseR * cap;
+                    nodes.r[i] = nodes.restR[i];
+                    nodes.vr[i] = 0;
+                    nodes.axialDisp[i] = 0;
+                    nodes.vAxial[i] = 0;
+                    nodes.stress[i] = 0;
+                }
+            }
+
+            // Trigger Elastic Shockwave Ripple across the Gel
+            function triggerElasticShockwave(centerX = 0, amplitude = 0.34) {
+                const halfLen = state.restHalfLength * (1.0 + state.endElongation);
+                for (let i = 1; i < NODE_COUNT - 1; i++) {
+                    const worldX = nodes.u[i] * halfLen;
+                    const dist = Math.abs(worldX - centerX);
+                    const wave = Math.cos(dist * 7.5) * Math.exp(-dist * 1.4);
+                    nodes.vr[i] += wave * amplitude * 14.0;
+                    nodes.stress[i] = Math.min(1, nodes.stress[i] + Math.abs(wave) * 0.65);
+                }
+                state.cameraShake = Math.min(0.14, state.cameraShake + 0.06);
+                viewportWrap.classList.remove('chroma-flash');
+                void viewportWrap.offsetWidth;
+                viewportWrap.classList.add('chroma-flash');
+                triggerBoingSound(0.85, 0.4);
+            }
+
+            // --- 200-Node Physics Step ---
+            function stepPhysics(dt) {
+                const baseR = (state.capsuleDiameterMm / 100) * 0.92;
+                const targetRestHalfLen = (state.capsuleLengthMm / 200) * 1.0;
+                state.restHalfLength += (targetRestHalfLen - state.restHalfLength) * 0.22;
+
+                // Pulsar mode dynamically oscillates the ring aperture!
+                let effectiveApertureMm = state.ringApertureMm;
+                if (state.ringMode === 'pulsar') {
+                    const pulse = Math.sin(state.time * 5.2) * 14;
+                    effectiveApertureMm = Math.max(24, Math.min(116, state.ringApertureMm + pulse));
+                }
+                syncRingGeometries((effectiveApertureMm / 100) * 0.92);
+
+                const innerR = currentInnerRadius;
+                const majorR = currentMajorRadius;
+                const tubeR = RING_TUBE_RADIUS;
+
+                // Update rest profile (keep hemispherical end-caps proportional in world units)
+                const dxBase = (2 * state.restHalfLength) / (NODE_COUNT - 1);
+                const capStartU = Math.max(0.55, 1.0 - (0.36 / Math.max(0.8, state.restHalfLength)));
+                const capSpanU = 1.0 - capStartU;
+                for (let i = 0; i < NODE_COUNT; i++) {
+                    const absU = Math.abs(nodes.u[i]);
+                    let cap = 1.0;
+                    if (absU > capStartU) {
+                        const t = (absU - capStartU) / capSpanU;
+                        cap = Math.sqrt(Math.max(0.0001, 1.0 - t * t));
+                    }
+                    nodes.restR[i] = baseR * cap;
+                }
+
+                // Dynamic ring travel bounds synced with current capsule length
+                const autoTravelLimit = state.restHalfLength + 0.50;
+                const maxRingLimitX = state.restHalfLength + 1.20;
+
+                // Auto oscillation
+                if (state.autoOscillate && state.dragMode !== 'ring') {
+                    state.autoPhase += dt * (1.85 * (DEFAULT_HALF_LENGTH / Math.max(0.85, state.restHalfLength)));
+                    state.targetRingX = Math.sin(state.autoPhase) * autoTravelLimit;
+                }
+
+                const compressionDepth = Math.max(0, baseR - innerR);
+                const compNorm = baseR > 0 ? Math.min(1, compressionDepth / baseR) : 0;
+                const slideFriction = 2.2 + compNorm * 11.0;
+
+                // Primary Ring Dynamics
+                if (state.dragMode === 'ring') {
+                    const prevX = state.ringX;
+                    const ax = (state.targetRingX - state.ringX) * 340;
+                    state.ringVx = (state.ringVx + ax * dt) * Math.exp(-24 * dt);
+                    state.ringX += state.ringVx * dt;
+                    state.recentDragVx = (state.ringX - prevX) / Math.max(dt, 0.001);
+                } else if (state.autoOscillate) {
+                    const ax = (state.targetRingX - state.ringX) * 190;
+                    state.ringVx = (state.ringVx + ax * dt) * Math.exp(-15 * dt);
+                    state.ringX += state.ringVx * dt;
+                } else {
+                    state.ringVx *= Math.exp(-slideFriction * dt);
+                    state.ringX += state.ringVx * dt;
+
+                    const limitX = state.restHalfLength + 0.95;
+                    if (state.ringX > limitX) {
+                        state.ringX = limitX;
+                        if (state.ringVx > 0.5) triggerBoingSound(Math.min(1, state.ringVx * 0.22), 0.1);
+                        state.ringVx = -state.ringVx * 0.58;
+                    } else if (state.ringX < -limitX) {
+                        state.ringX = -limitX;
+                        if (state.ringVx < -0.5) triggerBoingSound(Math.min(1, Math.abs(state.ringVx) * 0.22), 0.1);
+                        state.ringVx = -state.ringVx * 0.58;
+                    }
+                }
+
+                // Secondary Ring Dynamics (Dual Grip Mode: mirrors primary ring across center)
+                const isDual = state.ringMode === 'dual';
+                ring2.group.visible = isDual;
+                ringLight2.intensity = isDual ? (1.8 + compNorm * 2.5) : 0;
+
+                if (isDual) {
+                    const target2 = -state.ringX;
+                    const prev2 = state.ring2X;
+                    state.ring2X += (target2 - state.ring2X) * 0.24;
+                    state.ring2Vx = (state.ring2X - prev2) / Math.max(dt, 0.001);
+                    // Prevent two rings from overlapping at center
+                    if (Math.abs(state.ringX - state.ring2X) < tubeR * 2.6) {
+                        const sign = state.ringX >= 0 ? 1 : -1;
+                        state.ringX = sign * tubeR * 1.3;
+                        state.ring2X = -state.ringX;
+                    }
+                }
+
+                state.ringX = Math.max(-maxRingLimitX, Math.min(maxRingLimitX, state.ringX));
+                ring1.group.position.x = state.ringX;
+                ringLight1.position.x = state.ringX;
+
+                const dragTilt1 = Math.max(-1, Math.min(1, state.ringVx * compNorm * 0.35));
+                ring1.group.rotation.z = -dragTilt1 * 0.15;
+
+                if (isDual) {
+                    ring2.group.position.x = state.ring2X;
+                    ringLight2.position.x = state.ring2X;
+                    const dragTilt2 = Math.max(-1, Math.min(1, state.ring2Vx * compNorm * 0.35));
+                    ring2.group.rotation.z = -dragTilt2 * 0.15;
+                }
+
+                // Active rings array for contact solver
+                const activeRings = isDual
+                    ? [{ x: state.ringX, vx: state.ringVx }, { x: state.ring2X, vx: state.ring2Vx }]
+                    : [{ x: state.ringX, vx: state.ringVx }];
+
+                // Sub-stepped 200-node Coupled Continuum Integration
+                const subSteps = 3;
+                const subDt = dt / subSteps;
+                const kRadial = 205.0;
+                const kNeighbor = 380.0;
+                const dampR = 13.0;
+                const kAxial = 165.0;
+                const dampAxial = 14.0;
+                const halfLen = state.restHalfLength * (1.0 + state.endElongation);
+
+                for (let step = 0; step < subSteps; step++) {
+                    for (let i = 1; i < NODE_COUNT - 1; i++) {
+                        const worldX = nodes.u[i] * halfLen + nodes.axialDisp[i];
+
+                        // Radial spring + surface tension Laplacian
+                        const fRestore = (nodes.restR[i] - nodes.r[i]) * kRadial;
+                        const laplacianR = (nodes.r[i - 1] - 2 * nodes.r[i] + nodes.r[i + 1]) * kNeighbor;
+                        nodes.vr[i] += (fRestore + laplacianR - nodes.vr[i] * dampR) * subDt;
+                        nodes.r[i] += nodes.vr[i] * subDt;
+
+                        // Axial skin bunching from sliding friction of all active rings
+                        let fFrictionTotal = 0;
+                        for (let rIdx = 0; rIdx < activeRings.length; rIdx++) {
+                            const rg = activeRings[rIdx];
+                            const dxToRing = worldX - rg.x;
+                            const absDx = Math.abs(dxToRing);
+                            if (absDx < tubeR * 2.2 && nodes.restR[i] > innerR) {
+                                const w = Math.exp(-(dxToRing * dxToRing) / (2 * tubeR * tubeR));
+                                const sq = Math.min(1, (nodes.restR[i] - innerR) / baseR);
+                                fFrictionTotal += rg.vx * sq * w * 60.0;
+                            }
+                        }
+
+                        const fAxialRestore = -nodes.axialDisp[i] * kAxial;
+                        const laplacianAx = (nodes.axialDisp[i - 1] - 2 * nodes.axialDisp[i] + nodes.axialDisp[i + 1]) * 190.0;
+                        nodes.vAxial[i] += (fAxialRestore + laplacianAx + fFrictionTotal - nodes.vAxial[i] * dampAxial) * subDt;
+                        nodes.axialDisp[i] += nodes.vAxial[i] * subDt;
+                        nodes.axialDisp[i] = Math.max(-0.24, Math.min(0.24, nodes.axialDisp[i]));
+                    }
+
+                    // Strict External Torus-to-Skin Contact Constraint across all active rings
+                    let squeezedVolume = 0;
+                    for (let i = 1; i < NODE_COUNT - 1; i++) {
+                        const worldX = nodes.u[i] * halfLen + nodes.axialDisp[i];
+                        let maxAllowedR = Infinity;
+                        let inContact = false;
+
+                        for (let rIdx = 0; rIdx < activeRings.length; rIdx++) {
+                            const dxToRing = worldX - activeRings[rIdx].x;
+                            const absDx = Math.abs(dxToRing);
+                            const filletSpan = tubeR * 1.48;
+
+                            if (absDx < tubeR) {
+                                const chord = Math.sqrt(Math.max(0, tubeR * tubeR - dxToRing * dxToRing));
+                                const bound = Math.max(0.02, (majorR - chord) - SKIN_CLEARANCE);
+                                if (bound < maxAllowedR) maxAllowedR = bound;
+                                inContact = true;
+                            } else if (absDx < filletSpan) {
+                                const t = (absDx - tubeR) / (filletSpan - tubeR);
+                                const shoulder = innerR + (baseR - innerR) * (t * t * (3 - 2 * t));
+                                const bound = Math.max(innerR, shoulder);
+                                if (bound < maxAllowedR) maxAllowedR = bound;
+                            }
+                        }
+
+                        if (nodes.r[i] > maxAllowedR) {
+                            const pen = nodes.r[i] - maxAllowedR;
+                            squeezedVolume += Math.PI * (nodes.r[i] * nodes.r[i] - maxAllowedR * maxAllowedR) * dxBase;
+                            nodes.r[i] = maxAllowedR;
+                            if (nodes.vr[i] > 0) nodes.vr[i] = 0;
+                            nodes.stress[i] = Math.min(1.0, (pen / Math.max(0.08, baseR * 0.62)) * 1.5 + (inContact ? 0.18 : 0));
+                        } else {
+                            nodes.stress[i] *= 0.86;
+                        }
+                    }
+
+                    // Isochoric Volume Displacement into Pressure Bulges
+                    if (squeezedVolume > 0.00001) {
+                        const bulgeOffset = tubeR * 2.4 + 0.24;
+                        const bulgeWidth = 0.34;
+                        let totalWeight = 0;
+                        const weights = new Float32Array(NODE_COUNT);
+
+                        for (let i = 2; i < NODE_COUNT - 2; i++) {
+                            const worldX = nodes.u[i] * halfLen + nodes.axialDisp[i];
+                            let minAbsDx = Infinity;
+                            let bestWeight = 0;
+
+                            for (let rIdx = 0; rIdx < activeRings.length; rIdx++) {
+                                const rg = activeRings[rIdx];
+                                const dxToRing = worldX - rg.x;
+                                const absDx = Math.abs(dxToRing);
+                                if (absDx < minAbsDx) minAbsDx = absDx;
+
+                                const dirBias = Math.max(-0.48, Math.min(0.48, rg.vx * 0.2));
+                                const sideFactor = dxToRing >= 0 ? (1.0 + dirBias) : (1.0 - dirBias);
+                                const dPeak = absDx - bulgeOffset;
+                                const w = Math.exp(-(dPeak * dPeak) / (2 * bulgeWidth * bulgeWidth)) * sideFactor;
+                                bestWeight += w;
+                            }
+
+                            if (minAbsDx > tubeR * 1.15) {
+                                weights[i] = Math.max(0, bestWeight * (nodes.restR[i] / baseR));
+                                totalWeight += weights[i];
+                            }
+                        }
+
+                        if (totalWeight > 0.0001) {
+                            const radialShare = squeezedVolume * 0.84;
+                            for (let i = 2; i < NODE_COUNT - 2; i++) {
+                                if (weights[i] > 0) {
+                                    const dV = radialShare * (weights[i] / totalWeight);
+                                    const newR2 = nodes.r[i] * nodes.r[i] + dV / (Math.PI * dxBase);
+                                    nodes.r[i] = Math.sqrt(Math.max(0.0001, newR2));
+                                    nodes.stress[i] = Math.max(nodes.stress[i], Math.min(0.7, (weights[i] / totalWeight) * 7.2));
+                                }
+                            }
+                        }
+                    }
+
+                    nodes.r[0] = 0.0005;
+                    nodes.r[NODE_COUNT - 1] = 0.0005;
+                }
+
+                // Telemetry & Dynamic Effects
+                let maxSq = 0;
+                let overlapFound = false;
+                for (let i = 0; i < NODE_COUNT; i++) {
+                    const worldX = nodes.u[i] * halfLen + nodes.axialDisp[i];
+                    for (let rIdx = 0; rIdx < activeRings.length; rIdx++) {
+                        if (Math.abs(worldX - activeRings[rIdx].x) < tubeR * 1.2 && nodes.restR[i] > innerR) {
+                            const sq = (nodes.restR[i] - innerR) / Math.max(0.05, nodes.restR[i]);
+                            if (sq > maxSq) maxSq = sq;
+                            overlapFound = true;
+                        }
+                    }
+                }
+
+                const targetComp = overlapFound ? Math.min(100, Math.round(maxSq * 126)) : 0;
+                state.compressionPct += (targetComp - state.compressionPct) * 0.25;
+                const compT = state.compressionPct / 100;
+
+                const targetElong = compT * (isDual ? 0.30 : 0.22);
+                state.endElongation += (targetElong - state.endElongation) * 0.18;
+
+                const absSpeed = Math.abs(state.ringVx);
+                state.pressureKpa += ((101.3 + state.compressionPct * (isDual ? 1.65 : 1.18) + absSpeed * 9.5) - state.pressureKpa) * 0.22;
+                state.energyJoules += ((0.5 * 1.4 * absSpeed * absSpeed + compT * compT * 18.5) - state.energyJoules) * 0.22;
+
+                // Spawn Contact Sparks when sliding tightly compressed
+                if (compT > 0.35 && absSpeed > 0.9) {
+                    const spawnCount = Math.min(3, Math.floor(absSpeed * compT * 1.5));
+                    for (let s = 0; s < spawnCount; s++) {
+                        spawnContactSpark(state.ringX, innerR, state.ringVx);
+                        if (isDual) spawnContactSpark(state.ring2X, innerR, state.ring2Vx);
+                    }
+                }
+
+                // Update Spark Particles
+                const sPos = sparkGeo.attributes.position.array;
+                for (let i = 0; i < SPARK_COUNT; i++) {
+                    if (sparkLife[i] > 0) {
+                        sparkLife[i] -= dt * 2.4;
+                        sparkVel[i].vy -= 3.8 * dt;
+                        sPos[i * 3] += sparkVel[i].vx * dt;
+                        sPos[i * 3 + 1] += sparkVel[i].vy * dt;
+                        sPos[i * 3 + 2] += sparkVel[i].vz * dt;
+                        if (sparkLife[i] <= 0) sPos[i * 3 + 1] = -99;
+                    }
+                }
+                sparkGeo.attributes.position.needsUpdate = true;
+
+                // Update Internal Hydrodynamic Bubbles (accelerate through narrow ring bottlenecks!)
+                const bPos = bubbleGeo.attributes.position.array;
+                const currentHalfLen = state.restHalfLength * (1.0 + state.endElongation);
+                const lengthSpeedNorm = DEFAULT_HALF_LENGTH / Math.max(0.8, currentHalfLen);
+                for (let i = 0; i < BUBBLE_COUNT; i++) {
+                    const b = bubbleData[i];
+                    const idx = Math.max(0, Math.min(NODE_COUNT - 1, Math.round(((b.u + 1) * 0.5) * (NODE_COUNT - 1))));
+                    const localR = nodes.r[idx];
+                    const restLocalR = Math.max(0.05, nodes.restR[idx]);
+                    // Continuity equation: v_flow ~ (R0 / R)^2! Bubbles shoot rapidly through the constricted neck!
+                    const bottleneckBoost = Math.min(4.5, Math.pow(restLocalR / Math.max(0.06, localR), 1.6));
+                    b.u += dt * 0.08 * lengthSpeedNorm * b.speedOffset * bottleneckBoost * (state.ringVx >= 0 ? -1 : 1);
+                    if (b.u > 0.88) b.u = -0.88;
+                    if (b.u < -0.88) b.u = 0.88;
+
+                    const x = b.u * currentHalfLen + nodes.axialDisp[idx];
+                    const r = localR * b.radialRatio;
+                    bPos[i * 3] = x;
+                    bPos[i * 3 + 1] = Math.cos(b.angle + state.time * 0.4) * r;
+                    bPos[i * 3 + 2] = Math.sin(b.angle + state.time * 0.4) * r;
+                }
+                bubbleGeo.attributes.position.needsUpdate = true;
+
+                // Update Core Spine & Ring Glows
+                coreMesh.scale.y = (currentHalfLen / DEFAULT_HALF_LENGTH);
+                [ring1, ring2].forEach((rObj) => {
+                    rObj.rimMat.opacity = compT * 0.9;
+                    rObj.rMat.emissiveIntensity = 0.9 + compT * 1.6;
+                    rObj.hMat.opacity = 0.2 + compT * 0.34;
+                });
+                ringLight1.intensity = 1.8 + compT * 3.2;
+
+                // Mobile Haptics
+                if (state.compressionPct > 45 && absSpeed > 0.7 && navigator.vibrate) {
+                    const nowMs = performance.now();
+                    if (nowMs - state.lastHapticTime > 110) {
+                        navigator.vibrate(10);
+                        state.lastHapticTime = nowMs;
+                    }
+                }
+
+                updateAudioSynth(compT, absSpeed);
+
+                // Write Deformed Positions & Stress Colors into Capsule Mesh
+                const positions = capsuleGeo.attributes.position;
+                const vColors = capsuleGeo.attributes.color;
+                const isThermal = state.visMode === 'thermal';
+
+                for (let i = 0; i < vertexCount; i++) {
+                    const idx = vertNodeIdx[i];
+                    const theta = vertTheta[i];
+                    const x = nodes.u[idx] * currentHalfLen + nodes.axialDisp[idx];
+                    const r = vertIsCapCenter[i] ? 0 : nodes.r[idx];
+
+                    positions.setXYZ(i, x, Math.cos(theta) * r, Math.sin(theta) * r);
+
+                    if (isThermal) {
+                        const s = Math.min(1.0, nodes.stress[idx]);
+                        let cr, cg, cb;
+                        if (s < 0.33) {
+                            const t = s / 0.33;
+                            cr = 0.05; cg = 0.35 + 0.6 * t; cb = 0.98 - 0.45 * t;
+                        } else if (s < 0.66) {
+                            const t = (s - 0.33) / 0.33;
+                            cr = 0.05 + 0.93 * t; cg = 0.95; cb = 0.53 - 0.48 * t;
+                        } else {
+                            const t = (s - 0.66) / 0.34;
+                            cr = 1.0; cg = 0.95 - 0.85 * t; cb = 0.05;
+                        }
+                        vColors.setXYZ(i, cr, cg, cb);
+                    }
+                }
+
+                positions.needsUpdate = true;
+                if (isThermal) vColors.needsUpdate = true;
+                capsuleGeo.computeVertexNormals();
+            }
+
+            // --- Update Telemetry HUD & Oscilloscope ---
+            function updateUI() {
+                const compInt = Math.round(state.compressionPct);
+                compressionReadout.textContent = `${compInt}%`;
+                pressureReadout.innerHTML = `${state.pressureKpa.toFixed(0)} <span class="text-[8px] font-normal text-slate-400">кПа</span>`;
+                velocityReadout.innerHTML = `${Math.abs(state.ringVx).toFixed(1)} <span class="text-[8px] font-normal text-slate-400">м/с</span>`;
+                energyReadout.innerHTML = `${state.energyJoules.toFixed(1)} <span class="text-[8px] font-normal text-slate-400">Дж</span>`;
+
+                stressHistory.push(compInt);
+                stressHistory.shift();
+                velHistory.push(Math.min(100, Math.round(Math.abs(state.ringVx) * 14)));
+                velHistory.shift();
+
+                const w = graphCanvas.width;
+                const h = graphCanvas.height;
+                graphCtx.clearRect(0, 0, w, h);
+
+                graphCtx.strokeStyle = 'rgba(56, 189, 248, 0.15)';
+                graphCtx.lineWidth = 1;
+                graphCtx.beginPath();
+                graphCtx.moveTo(0, h * 0.5);
+                graphCtx.lineTo(w, h * 0.5);
+                graphCtx.stroke();
+
+                graphCtx.strokeStyle = '#fb7185';
+                graphCtx.lineWidth = 1.6;
+                graphCtx.beginPath();
+                for (let i = 0; i < stressHistory.length; i++) {
+                    const x = (i / (stressHistory.length - 1)) * w;
+                    const y = h - 2 - (stressHistory[i] / 100) * (h - 4);
+                    if (i === 0) graphCtx.moveTo(x, y);
+                    else graphCtx.lineTo(x, y);
+                }
+                graphCtx.stroke();
+
+                graphCtx.strokeStyle = '#38bdf8';
+                graphCtx.lineWidth = 1.2;
+                graphCtx.beginPath();
+                for (let i = 0; i < velHistory.length; i++) {
+                    const x = (i / (velHistory.length - 1)) * w;
+                    const y = h - 2 - (velHistory[i] / 100) * (h - 4);
+                    if (i === 0) graphCtx.moveTo(x, y);
+                    else graphCtx.lineTo(x, y);
+                }
+                graphCtx.stroke();
+            }
+
+            // --- Touch & Mouse Interaction (Ring Drag, Gel Poke Ripple, 3D Orbit, Pinch Zoom) ---
+            const raycaster = new THREE.Raycaster();
+            const pointerNDC = new THREE.Vector2();
+            const dragPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+            const planeIntersect = new THREE.Vector3();
+
+            function updateNDC(clientX, clientY) {
+                const rect = container.getBoundingClientRect();
+                pointerNDC.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+                pointerNDC.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+            }
+
+            function clientToRingX(clientX, clientY) {
+                updateNDC(clientX, clientY);
+                raycaster.setFromCamera(pointerNDC, camera);
+                dragPlane.normal.set(0, 0, 1);
+                const maxLimit = state.restHalfLength + 1.15;
+                if (raycaster.ray.intersectPlane(dragPlane, planeIntersect)) {
+                    return Math.max(-maxLimit, Math.min(maxLimit, planeIntersect.x));
+                }
+                return state.targetRingX;
+            }
+
+            function handlePointerStart(clientX, clientY) {
+                updateNDC(clientX, clientY);
+                raycaster.setFromCamera(pointerNDC, camera);
+
+                // Check direct hit on ring hitbox first
+                const ringHits = raycaster.intersectObject(ringHitBox, false);
+                if (ringHits.length > 0) {
+                    state.dragMode = 'ring';
+                    state.recentDragVx = 0;
+                    if (state.autoOscillate) setAutoMode(false);
+                    state.targetRingX = clientToRingX(clientX, clientY);
+                    if (dragHint) dragHint.style.opacity = '0';
+                    return;
+                }
+
+                // Check tap/poke directly on the gel capsule!
+                const gelHits = raycaster.intersectObject(capsuleMesh, false);
+                if (gelHits.length > 0) {
+                    const hitPt = gelHits[0].point;
+                    triggerElasticShockwave(hitPt.x, 0.28);
+                    state.dragMode = 'ring';
+                    state.recentDragVx = 0;
+                    if (state.autoOscillate) setAutoMode(false);
+                    const maxLimit = state.restHalfLength + 1.15;
+                    state.targetRingX = Math.max(-maxLimit, Math.min(maxLimit, hitPt.x));
+                    if (dragHint) dragHint.style.opacity = '0';
+                    return;
+                }
+
+                // Background orbit
+                state.dragMode = 'camera';
+                state.lastPointerX = clientX;
+                state.lastPointerY = clientY;
+            }
+
+            function handlePointerMove(clientX, clientY) {
+                if (state.dragMode === 'ring') {
+                    state.targetRingX = clientToRingX(clientX, clientY);
+                } else if (state.dragMode === 'camera') {
+                    const dx = clientX - state.lastPointerX;
+                    const dy = clientY - state.lastPointerY;
+                    state.lastPointerX = clientX;
+                    state.lastPointerY = clientY;
+
+                    camOrbit.targetTheta -= dx * 0.0075;
+                    camOrbit.targetPhi = Math.max(-0.55, Math.min(0.88, camOrbit.targetPhi + dy * 0.0075));
+                }
+            }
+
+            function handlePointerEnd() {
+                if (state.dragMode === 'ring') {
+                    state.ringVx = Math.max(-9.5, Math.min(9.5, state.recentDragVx * 0.68));
+                    if (Math.abs(state.ringVx) > 3.2) {
+                        state.cameraShake = Math.min(0.12, Math.abs(state.ringVx) * 0.012);
+                    }
+                }
+                state.dragMode = 'none';
+            }
+
+            container.addEventListener('mousedown', (e) => handlePointerStart(e.clientX, e.clientY));
+            window.addEventListener('mousemove', (e) => handlePointerMove(e.clientX, e.clientY));
+            window.addEventListener('mouseup', handlePointerEnd);
+
+            container.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomStep = e.deltaY * 0.0065 * Math.max(0.6, camOrbit.targetRadius * 0.22);
+                camOrbit.targetRadius = Math.max(3.2, Math.min(28.0, camOrbit.targetRadius + zoomStep));
+            }, { passive: false });
+
+            container.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    handlePointerStart(e.touches[0].clientX, e.touches[0].clientY);
+                } else if (e.touches.length === 2) {
+                    state.dragMode = 'pinch';
+                    const dx = e.touches[0].clientX - e.touches[1].clientX;
+                    const dy = e.touches[0].clientY - e.touches[1].clientY;
+                    state.pinchStartDist = Math.hypot(dx, dy);
+                    state.pinchStartZoom = camOrbit.targetRadius;
+                }
+            }, { passive: true });
+
+            window.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1 && (state.dragMode === 'ring' || state.dragMode === 'camera')) {
+                    handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
+                } else if (e.touches.length === 2 && state.dragMode === 'pinch') {
+                    const dx = e.touches[0].clientX - e.touches[1].clientX;
+                    const dy = e.touches[0].clientY - e.touches[1].clientY;
+                    const dist = Math.hypot(dx, dy);
+                    if (state.pinchStartDist > 10) {
+                        camOrbit.targetRadius = Math.max(3.2, Math.min(28.0, state.pinchStartZoom * (state.pinchStartDist / dist)));
+                    }
+                }
+            }, { passive: true });
+
+            window.addEventListener('touchend', handlePointerEnd);
+            window.addEventListener('touchcancel', handlePointerEnd);
+
+            // --- UI Controls & Tabs ---
+            lengthSlider.addEventListener('input', (e) => {
+                state.capsuleLengthMm = parseInt(e.target.value, 10);
+                lengthVal.textContent = `${state.capsuleLengthMm} мм`;
+                if (state.camMode === 'orbit') {
+                    const lengthRatio = Math.max(1.0, (state.capsuleLengthMm / 330));
+                    const aspect = container.clientWidth / Math.max(1, container.clientHeight);
+                    const baseDist = aspect < 0.85 ? 8.1 : (aspect < 1.2 ? 6.7 : 5.8);
+                    camOrbit.targetRadius = Math.min(28.0, baseDist * (0.65 + 0.35 * lengthRatio));
+                }
+            });
+
+            diameterSlider.addEventListener('input', (e) => {
+                state.capsuleDiameterMm = parseInt(e.target.value, 10);
+                diameterVal.textContent = `${state.capsuleDiameterMm} мм`;
+            });
+
+            apertureSlider.addEventListener('input', (e) => {
+                state.ringApertureMm = parseInt(e.target.value, 10);
+                apertureVal.textContent = `${state.ringApertureMm} мм`;
+            });
+
+            function setAutoMode(enabled) {
+                state.autoOscillate = enabled;
+                if (enabled) {
+                    const autoLimit = state.restHalfLength + 0.50;
+                    state.autoPhase = Math.asin(Math.max(-1, Math.min(1, state.ringX / autoLimit)));
+                    autoDot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-ping';
+                    btnAuto.classList.add('ring-1', 'ring-emerald-400', 'bg-emerald-900');
+                    if (dragHint) dragHint.style.opacity = '0';
+                } else {
+                    autoDot.className = 'w-1.5 h-1.5 rounded-full bg-slate-500';
+                    btnAuto.classList.remove('ring-1', 'ring-emerald-400', 'bg-emerald-900');
+                }
+            }
+
+            btnAuto.addEventListener('click', () => setAutoMode(!state.autoOscillate));
+
+            // ⚡ High-Speed Kinetic Impulse Launch
+            btnImpulse.addEventListener('click', () => {
+                setAutoMode(false);
+                if (dragHint) dragHint.style.opacity = '0';
+                const dir = state.ringX >= 0 ? -1 : 1;
+                state.ringVx = dir * 8.2;
+                state.cameraShake = 0.11;
+                viewportWrap.classList.remove('chroma-flash');
+                void viewportWrap.offsetWidth;
+                viewportWrap.classList.add('chroma-flash');
+                triggerBoingSound(0.75, 0.25);
+            });
+
+            // 🌊 Elastic Shockwave Ripple
+            btnShockwave.addEventListener('click', () => {
+                if (dragHint) dragHint.style.opacity = '0';
+                triggerElasticShockwave(state.ringX, 0.42);
+            });
+
+            // Collapsible Bottom Panel
+            btnCollapse.addEventListener('click', () => {
+                state.panelCollapsed = !state.panelCollapsed;
+                if (state.panelCollapsed) {
+                    tabPanels.classList.add('hidden');
+                    btnCollapse.textContent = '▲';
+                } else {
+                    tabPanels.classList.remove('hidden');
+                    btnCollapse.textContent = '▼';
+                }
+            });
+
+            // Pill Tab Switcher (ФИЗИКА / МАТЕРИАЛ / РЕЖИМ)
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const panelMap = {
+                physics: document.getElementById('panel-physics'),
+                material: document.getElementById('panel-material'),
+                mode: document.getElementById('panel-mode')
+            };
+
+            tabButtons.forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const target = btn.getAttribute('data-tab');
+                    if (state.panelCollapsed) {
+                        state.panelCollapsed = false;
+                        tabPanels.classList.remove('hidden');
+                        btnCollapse.textContent = '▼';
+                    }
+                    tabButtons.forEach((b) => {
+                        b.className = b === btn
+                            ? 'tab-btn py-1 rounded-lg bg-sky-500/25 text-sky-300 text-[9.5px] font-bold tracking-wider uppercase transition'
+                            : 'tab-btn py-1 rounded-lg text-slate-400 hover:text-slate-200 text-[9.5px] font-bold tracking-wider uppercase transition';
+                    });
+                    Object.keys(panelMap).forEach((k) => {
+                        panelMap[k].classList.toggle('hidden', k !== target);
+                    });
+                });
+            });
+
+            // Visualization Mode Switcher (СТУДИЯ PBR / РАЗРЕЗ / ТЕПЛОВИЗОР)
+            const visButtons = document.querySelectorAll('.vis-btn');
+            function applyVisualizationMode(mode) {
+                state.visMode = mode;
+                const preset = MATERIALS[state.materialIndex];
+
+                visButtons.forEach((b) => {
+                    const active = b.getAttribute('data-vis') === mode;
+                    b.className = active
+                        ? 'vis-btn py-1.5 px-2 rounded-lg bg-sky-500/25 border border-sky-400/50 text-[9.5px] font-bold tracking-wider text-sky-200 uppercase transition'
+                        : 'vis-btn py-1.5 px-2 rounded-lg bg-slate-900/80 border border-slate-700/70 text-[9.5px] font-bold tracking-wider text-slate-400 uppercase transition';
+                });
+
+                if (mode === 'studio') {
+                    capsuleMaterial.map = textures.mapTex;
+                    capsuleMaterial.bumpMap = textures.bumpTex;
+                    capsuleMaterial.color.setHex(preset.color);
+                    capsuleMaterial.emissive.setHex(preset.emissive);
+                    capsuleMaterial.emissiveIntensity = preset.emissiveInt;
+                    capsuleMaterial.transmission = preset.transmission;
+                    capsuleMaterial.opacity = 0.94;
+                    capsuleMaterial.vertexColors = false;
+                    wireMaterial.opacity = 0.04;
+                    coreMat.opacity = 0.36;
+                } else if (mode === 'cutaway') {
+                    capsuleMaterial.map = textures.mapTex;
+                    capsuleMaterial.color.setHex(preset.color);
+                    capsuleMaterial.emissive.setHex(preset.emissive);
+                    capsuleMaterial.transmission = 0.72;
+                    capsuleMaterial.opacity = 0.26;
+                    capsuleMaterial.vertexColors = false;
+                    wireMaterial.opacity = 0.42;
+                    wireMaterial.color.setHex(0x38bdf8);
+                    coreMat.opacity = 0.75;
+                } else if (mode === 'thermal') {
+                    capsuleMaterial.map = null;
+                    capsuleMaterial.color.setHex(0xffffff);
+                    capsuleMaterial.emissive.setHex(0x000000);
+                    capsuleMaterial.transmission = 0.08;
+                    capsuleMaterial.opacity = 0.98;
+                    capsuleMaterial.vertexColors = true;
+                    wireMaterial.opacity = 0.08;
+                    coreMat.opacity = 0.15;
+                }
+                capsuleMaterial.needsUpdate = true;
+            }
+
+            visButtons.forEach((b) => {
+                b.addEventListener('click', () => applyVisualizationMode(b.getAttribute('data-vis')));
+            });
+
+            // 5 Material Presets Switcher
+            const matButtons = document.querySelectorAll('.mat-btn');
+            matButtons.forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.getAttribute('data-mat'), 10);
+                    state.materialIndex = idx;
+                    const preset = MATERIALS[idx];
+
+                    textures.mapTex.dispose();
+                    textures.bumpTex.dispose();
+                    textures = generateGelTextures(preset);
+
+                    capsuleMaterial.roughness = preset.roughness;
+                    capsuleMaterial.metalness = preset.metalness;
+                    capsuleMaterial.ior = preset.ior;
+                    coreMat.color.setHex(preset.coreColor);
+                    bubbleMat.color.setHex(preset.particleColor);
+                    statusLed.className = `w-2.5 h-2.5 rounded-full animate-pulse ${preset.ledClass}`;
+
+                    applyVisualizationMode(state.visMode);
+
+                    matButtons.forEach((b, i) => {
+                        const isLast = i === 4;
+                        const spanClass = isLast ? 'col-span-2 sm:col-span-1' : '';
+                        b.className = i === idx
+                            ? `mat-btn py-2 px-1.5 rounded-xl border text-[9px] font-bold tracking-wider uppercase transition ${spanClass} ${preset.btnClass}`
+                            : `mat-btn py-2 px-1.5 rounded-xl bg-slate-900/80 border border-slate-700/70 text-[9px] font-bold tracking-wider text-slate-400 uppercase transition ${spanClass}`;
+                    });
+                });
+            });
+
+            // Ring Mode Switcher (ОДНО КОЛЬЦО / ДВОЙНОЙ ЗАХВАТ / ПУЛЬСАР)
+            const rmodeButtons = document.querySelectorAll('.rmode-btn');
+            rmodeButtons.forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const mode = btn.getAttribute('data-rmode');
+                    state.ringMode = mode;
+                    rmodeButtons.forEach((b) => {
+                        const active = b === btn;
+                        b.className = active
+                            ? 'rmode-btn py-2 px-2 rounded-xl bg-rose-500/25 border border-rose-400/60 text-[9.5px] font-bold tracking-wider text-rose-200 uppercase transition'
+                            : 'rmode-btn py-2 px-2 rounded-xl bg-slate-900/80 border border-slate-700/70 text-[9.5px] font-bold tracking-wider text-slate-400 uppercase transition';
+                    });
+                    if (mode === 'dual' && Math.abs(state.ringX) < 0.8) {
+                        state.targetRingX = 1.45;
+                    }
+                });
+            });
+
+            // Camera Presets Switcher (3D ОРБИТА / СЛЕЖЕНИЕ)
+            const camButtons = document.querySelectorAll('.cam-btn');
+            function setCameraPreset(mode) {
+                state.camMode = mode === 'follow' ? 'follow' : 'orbit';
+                const aspect = container.clientWidth / Math.max(1, container.clientHeight);
+                const baseDist = aspect < 0.85 ? 8.1 : (aspect < 1.2 ? 6.7 : 5.8);
+
+                camButtons.forEach((b) => {
+                    const active = b.getAttribute('data-cam') === state.camMode;
+                    b.className = active
+                        ? 'cam-btn px-2 py-1 rounded-lg bg-sky-500/30 text-sky-200 text-[9px] font-bold uppercase transition'
+                        : 'cam-btn px-2 py-1 rounded-lg text-slate-400 hover:text-slate-200 text-[9px] font-bold uppercase transition';
+                });
+
+                if (state.camMode === 'orbit') {
+                    camOrbit.targetTheta = 0.34;
+                    camOrbit.targetPhi = 0.22;
+                    camOrbit.targetRadius = baseDist;
+                } else if (state.camMode === 'follow') {
+                    camOrbit.targetTheta = 0.26;
+                    camOrbit.targetPhi = 0.18;
+                    camOrbit.targetRadius = baseDist * 0.78;
+                }
+            }
+
+            camButtons.forEach((b) => {
+                b.addEventListener('click', () => setCameraPreset(b.getAttribute('data-cam')));
+            });
+
+            // --- Resize & 60fps Animation Loop ---
+            function handleResize() {
+                const width = container.clientWidth;
+                const height = container.clientHeight;
+                if (width === 0 || height === 0) return;
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+                renderer.setSize(width, height);
+            }
+            window.addEventListener('resize', handleResize);
+
+            let lastTimestamp = performance.now();
+
+            function animate(now) {
+                requestAnimationFrame(animate);
+
+                const dt = Math.min(0.04, (now - lastTimestamp) / 1000);
+                lastTimestamp = now;
+                state.time += dt;
+
+                stepPhysics(dt);
+                updateUI();
+
+                // Camera Orbit + Follow Mode + Impact Shake
+                camOrbit.theta += (camOrbit.targetTheta - camOrbit.theta) * 0.14;
+                camOrbit.phi += (camOrbit.targetPhi - camOrbit.phi) * 0.14;
+                camOrbit.radius += (camOrbit.targetRadius - camOrbit.radius) * 0.14;
+
+                const targetLookX = state.camMode === 'follow' ? state.ringX * 0.65 : 0;
+                camOrbit.lookX += (targetLookX - camOrbit.lookX) * 0.14;
+
+                state.cameraShake *= Math.exp(-12 * dt);
+                const shakeX = (Math.random() - 0.5) * state.cameraShake;
+                const shakeY = (Math.random() - 0.5) * state.cameraShake;
+
+                camera.position.x = camOrbit.lookX + camOrbit.radius * Math.sin(camOrbit.theta) * Math.cos(camOrbit.phi) + shakeX;
+                camera.position.y = camOrbit.radius * Math.sin(camOrbit.phi) + shakeY;
+                camera.position.z = camOrbit.radius * Math.cos(camOrbit.theta) * Math.cos(camOrbit.phi);
+                camera.lookAt(camOrbit.lookX, -0.06, 0);
+
+                renderer.render(scene, camera);
+            }
+
+            window.onload = function () {
+                handleResize();
+                resetNodes();
+                setCameraPreset('orbit');
+                camOrbit.theta = camOrbit.targetTheta;
+                camOrbit.phi = camOrbit.targetPhi;
+                camOrbit.radius = camOrbit.targetRadius;
+                syncRingGeometries((state.ringApertureMm / 100) * 0.92);
+                lastTimestamp = performance.now();
+                requestAnimationFrame(animate);
+            };
+        })();
+    </script>
+</body>
+</html>
+```
